@@ -4,63 +4,87 @@ import Levenshtein
 DEBUG = False
 
 fullSequence = ''
+tabu = []
 # start = ''
 # n = 0
 # spectrum = []
 
+
 def init(argv):
-    global fullSequence #, start, n, spectrum
+    global fullSequence  # , start, n, spectrum
 
     if len(argv) != 2:
-        sys.exit("Usage: python3 " + argv[0] + " [filename]")
+        sys.exit("Usage: python3 " + argv[0] + " FILENAME")
     filename = argv[1]
 
-    file = open(filename, "r")
+    # print(filename)
 
-    start = file.readline().rstrip()
-    n = int(file.readline().rstrip())
-    spectrum = [line.rstrip() for line in file]
+    with open(filename, "r") as file:
+        start = file.readline().rstrip()
+        n = int(file.readline().rstrip())
+        spectrum = [line.rstrip() for line in file]
 
     with open(filename + ".seq", "r") as seqFile:
-        fullSequence = str(seqFile.read()).rstrip()
+        fullSequence = str(seqFile.read()).strip()
+        # print(fullSequence)
 
-    file.close()
-    seqFile.close()
     return n, start, spectrum
 
 
-def calcDistance(a, b, x):
-    if a[x:] == b[:len(b)-x]:
-        return x
-    return calcDistance(a, b, x+1)
+def calcDifference(stringA, stringB, difference):
+    if stringA[difference:] == stringB[:len(stringB) - difference]:
+        return difference
+    return calcDifference(stringA, stringB, difference + 1)
 
 
 def generateMatrix(spectrum):
-    return [[calcDistance(i, j, 0) for j in spectrum] for i in spectrum]
+    return [[calcDifference(i, j, 0) for j in spectrum] for i in spectrum]
 
 
 def findMin(array):
     minval = len(fullSequence)
 
-    for i in array:
-        if i < minval and i != 0:
-            minval = i
+    for element in array:
+        if element < minval and element > 0:
+            minval = element
 
     return minval
 
 
-def getAns(sol):
+def findMax(array):
+    maxval = 0
 
-    ans = ''
+    for element in array:
+        if element > maxval:
+            maxval = element
 
-    for i in range(len(sol)):
-        if len(ans) == 0:
-            ans += sol[i]
+    return maxval
+
+
+def getSequence(solution):
+
+    sequence = ''
+
+    for i in range(len(solution)):
+        if not sequence:
+            sequence += solution[i]
         else:
-            addition = calcDistance(sol[i - 1], sol[i], 0)
-            ans += sol[i][:-1*addition]
+            addition = calcDifference(solution[i - 1], solution[i], 0)
+            sequence += solution[i][-1*addition:]
 
-    return ans
+    return sequence
+
+
+def getLength(solution):
+
+    length = 0
+    for i in range(len(solution)):
+        if not length:
+            length += len(solution[i])
+        else:
+            length += calcDifference(solution[i-1], solution[i], 0)
+
+    return length
 
 
 def greedy(n, start, spectrum):
@@ -70,47 +94,110 @@ def greedy(n, start, spectrum):
     trashSet = spectrum[:]
     solution = [last]
 
+    if DEBUG:
+        print("Generating matrix...")
+
     m = generateMatrix(spectrum)
 
+    if DEBUG:
+        print("Generated.")
+        print("Start: ", last)
+
     while True:
-        iLast = spectrum.index(last)
-        ar = [m[iLast][spectrum.index(o)] for o in trashSet]
+        indexLast = spectrum.index(last)
+        ar = [m[indexLast][spectrum.index(o)] for o in trashSet]
 
         for i in range(len(ar)):
             x = trashSet[i]
-            if x != spectrum[iLast]:
+            if x != spectrum[indexLast]:
                 ar[i] += findMin(m[spectrum.index(x)])
 
         temp = ar.index(findMin(ar))
         index = spectrum.index(trashSet[temp])
-        addition = m[iLast][index]
+        addition = m[indexLast][index]
 
         if length + addition > n:
             break
-        length += addition
 
         last = spectrum[index]
+        
         solution.append(last)
+        length += addition
+
         trashSet.remove(last)
+
+        if DEBUG:
+            print("Added", last)
         # ans += last[:-1*addition]
+
+    if DEBUG:
+        for el in solution:
+            temp = solution.count(el)
+            if temp > 1:
+                print("Warning:", el,
+                      "is in solution more than once ({})".format(temp))
+        print(len(solution), "oligonucleotides in the solution")
 
     return solution
 
 
-def globalCrit(sol):
-    return len(sol)
+def getGlobalCriterionValue(solution):
+    return len(solution)
 
 
-def condensation(sol):
-    return len(sol)/len(getAns(sol))
+def getCondensationValue(solution):
+    return len(solution)/getLength(solution)
+
+# def condensationStep(solution, condensation):
+def condensationStep(solution):
+
+    condensation = getCondensationValue(solution)
+    condensationValues = []
+
+    for oligonucleotide in solution:
+        newSolution = solution[:]
+        newSolution.remove(oligonucleotide)
+        condensationValues.append(getCondensationValue(newSolution))
+
+    maxval = findMax(condensationValues)
+    # if DEBUG:
+    print("Condensation:", condensation, "\nMaxVal:", maxval)
+    if maxval >= condensation:
+        tabu.append(solution.pop(condensationValues.index(maxval)))
+    else:
+        return ''
+
+    return solution
 
 
-def tabuSearch():
+def extensionStep(solution):
     pass
 
+
+def tabuSearch(solution):
+
+    newSol = solution
+    # condensation = getCondensationValue(solution)
+
+    while True:
+        # testSol = condensationStep(newSol, condensation)
+        testSol = condensationStep(newSol)
+        if not testSol:
+            break
+        newSol = testSol
+
+    if DEBUG and tabu:
+        print("TABU LIST:", tabu)
+
+    solution = newSol
+    # globalCrit = getGlobalCriterionValue(solution)
+
+    return solution
+
 if __name__ == "__main__":
-    
+
     n, start, spectrum = init(sys.argv)
     solution = greedy(n, start, spectrum)
+    # tabuSearch(solution)
 
-    # print(Levenshtein.ratio(sequence, fullSequence))
+    print(Levenshtein.ratio(getSequence(solution), fullSequence))
