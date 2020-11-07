@@ -1,0 +1,2 @@
+# bioinformatyka
+Sequencing by hybridization
