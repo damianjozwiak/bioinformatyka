@@ -42,7 +42,7 @@ def generateMatrix(spectrum):
 
 
 def findMin(array):
-    minval = len(fullSequence)
+    minval = array[0]
 
     for element in array:
         if element < minval and element > 0:
@@ -52,7 +52,7 @@ def findMin(array):
 
 
 def findMax(array):
-    maxval = 0
+    maxval = array[0]
 
     for element in array:
         if element > maxval:
@@ -200,4 +200,4 @@ if __name__ == "__main__":
     solution = greedy(n, start, spectrum)
     # tabuSearch(solution)
 
-    print(Levenshtein.ratio(getSequence(solution), fullSequence))
+    # print(Levenshtein.ratio(getSequence(solution), fullSequence))
