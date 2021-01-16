@@ -6,31 +6,22 @@ DEBUG = False
 
 fullSequence = ''
 tabu = []
-# trashSet = []
-# start = ''
-# n = 0
-# spectrum = []
 
 
 def init(argv):
-    global fullSequence  # , start, n, spectrum
+    global fullSequence
 
     if len(argv) != 2:
         sys.exit('Usage: python3 ' + argv[0] + ' FILENAME')
     filename = argv[1]
-
-    # print(filename)
 
     with open(filename, 'r') as file:
         start = file.readline().rstrip()
         n = int(file.readline().rstrip())
         spectrum = [line.rstrip() for line in file]
 
-    # trashSet = spectrum[:]
-
     with open(filename + '.seq', 'r') as seqFile:
         fullSequence = str(seqFile.read()).strip()
-        # print(fullSequence)
 
     return n, start, spectrum
 
@@ -92,7 +83,7 @@ def getLength(solution):
 
 
 def greedy(n, start, spectrum):
-    
+
     if DEBUG:
         print('Starting greedy...')
 
@@ -112,7 +103,8 @@ def greedy(n, start, spectrum):
 
     while True:
         indexLast = spectrum.index(last)
-        ar = [m[indexLast][spectrum.index(o)] for o in trashSet if o not in tabu]
+        ar = [m[indexLast][spectrum.index(o)]
+              for o in trashSet if o not in tabu]
 
         for i in range(len(ar)):
             x = trashSet[i]
@@ -132,10 +124,6 @@ def greedy(n, start, spectrum):
         length += addition
 
         trashSet.remove(last)
-
-        # if DEBUG:
-        # print('Added', last)
-        # ans += last[:-1*addition]
 
     if DEBUG:
         for el in solution:
@@ -215,17 +203,19 @@ def tabuSearch(solution, n, spectrum):
     feasible.append(newSol[-1])
 
     newSol.extend(greedy(n - getLength(newSol), newSol[-1], feasible))
-    # print(len(solution), '\t\t\t', len(newSol))
-        
+
     return solution if globalCrit > getGlobalCriterionValue(newSol) else newSol
 
 
 if __name__ == '__main__':
 
     n, first, spectrum = init(sys.argv)
+
     start = time.time()
     initialSolution = greedy(n, first, spectrum)
-    result = Levenshtein.ratio(getSequence(initialSolution), fullSequence)
     stop = time.time()
-    # solution = tabuSearch(initialSolution, n, spectrum)
-    print('{};{};{}'.format(sys.argv[1], result, stop - start))
+
+    result = Levenshtein.ratio(getSequence(initialSolution), fullSequence)
+
+    print('{};{};{};{};{}'.format(
+        sys.argv[1], n, len(spectrum[0]), result, stop - start))

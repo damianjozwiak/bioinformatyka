@@ -11,7 +11,7 @@ nucleotides = ['A', 'C', 'G', 'T']
 
 def init():
     for n in range(300, 1001, 100):
-        for k in range(8,11):
+        for k in range(7,11):
             for i in range(1, 31):
                 start, spectrum, sequence = generate(n,k)
                 filename = dirname + 'rand-' + str(n) + '-' + str(k) + '-' + str(i)
